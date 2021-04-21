@@ -104,3 +104,20 @@ iOS 12나 이전버전에서 새로운 아키텍쳐를 사용하려는 경우
 * 지금까지의 내용들이 너무 거추장스러워서 iOS 13 이후에도 이전 아키텍쳐를 그대로 사용하고 싶다면 다음과 같이 하면 된다
   - UISceneSession이나 SceneDelegate 관련 코드를 전부 삭제한다
   - Info.plist 파일에 있는 Application Scene Manifest를 지운다
+
+---
+
+## 앱은 어떻게 런치되는가
+
+단일 호출 지점
+* 모든 앱은 UIApplicationMain를 통해 시작된다
+  - Obj-C로 작성된 앱과 다르게 스위프트에서는 명시적으로 이 함수를 호출하지는 않고 씬 뒤에서 호출된다
+* 위 함수의 호출로 앱의 초기 인스턴스들이 생성된다
+* 만약 앱이 main 스토리보드를 사용하면, 이 인스턴스들은 윈도우와 루트 뷰 컨트롤러에 포함된다
+* 그런데 보다 정확히는 UIApplicationMain는 아키텍쳐(old/new)에 따라 다르게 작동한다
+
+iOS 13 이상 버전에서 UIApplicationMain는의 작동방식
+1. UIApplicationMain은 UIApplication을 초기화하고 앱 전체에 공유되는 어플리케이션 인스턴스들을 제공하기 위해 UIApplication에서 생성된 인스턴스들을 소유한다. 이렇게 생성된 공유 인스턴스들은 UIApplication.shared로 참조가능하다. 그리고나서 UIApplicationMain는 앱 델리게이트 클래스를 초기화한다(클래스에 @main이 마킹되어 있다, 스위프트 5.3 이전에는 @UIApplicationMain). 이 클래스는 앱 델리게이트 인스턴스들을 소유하며, 인스턴스들은 앱이 살아있는 동안 유지된다
+2. UIApplicationMain은 앱 델리게이트의 application(_:didFinishLaunchingWithOptions:)를 호출한다
+3. UIApplicationMain은 UISceneSession, UIWindowScene, 윈도우 씬의 델리게이트로 제공될 인스턴스를 생성한다. Info.plist 파일에 윈도우 씬 델리게이트 인스턴스의 클래스를 문자열로 지정한다(Application Scene Manifest 딕셔너리에 있는 Scene Configuration에 Delegate Class Name을 지정되어 있다). 빌트인 템플릿에서 이 클래스는 SceneDelegate 클래스다. 빌트인 템플릿으로 프로젝트를 생성한 후 Info.plist 파일에 $(PRODUCT_MODULE_NAME)로 쓰여져있다. 
+4. UIApplicationMain은 첫 번째 씬이 스토리보드를 사용하고 있는지를 알아본다. Info.plist의 Application Scene Manifest 딕셔너리에 있는 Scene Configuration에 Storyboard Name에 지정되어 있다. 만약 지정되어 있다면, UIApplicationMain은는 스토리보드의 초기 뷰컨트롤러를 초기화한다
